@@ -1,5 +1,29 @@
 local M = {}
 
+function M.verify_file_match()
+  -- Capturar el texto precedido por "R-XXX"
+  local captured_id = M.capture_id()
+  if not captured_id then
+    error("No se encontró texto precedido por 'R-'.")
+  end
+  -- Encontrar coincidencia
+  return M.compare_with_files(captured_id)
+end
+
+
+-- Comprabar si el ID existe
+function M.compare_with_ids(content, id)
+  for _, item in ipairs(content) do
+    for key, _ in pairs(item) do
+      if key == id then
+        return true
+      end
+    end
+  end
+  return false
+end
+
+
 -- Función para capturar el texto precedido por "TOKEN-XXX"
 function M.capture_id()
   local captured_text = nil

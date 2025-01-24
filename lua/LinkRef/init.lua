@@ -6,8 +6,6 @@ local url = require("LinkRef.url_manager")
 local json = require("LinkRef.json_manager")
 local checker = require('LinkRef.id_checker')
 local tops = require("LinkRef.select_text")
-local Log = require('vendor.log').info
-
 
 M.setup = function(options)
   -- Merge the user-provided options with the default options
@@ -21,34 +19,47 @@ M.setup = function(options)
         vim.keymap.set('n', '<leader>xn', ":lua require('LinkRef').initial_config()<CR>", opts)
         vim.keymap.set('v', '<leader>xl', ":lua require('LinkRef').add_link_reference()<CR>", opts)
         vim.keymap.set('v', '<leader>xg', ":lua require('LinkRef').go_link_reference()<CR>", opts)
+        vim.keymap.set('v', '<leader>xs', ":lua require('LinkRef').show_hidden_link()<CR>", opts)
       end,
     })
   end
 end
 
 
-local function verify_file_match()
-  -- Capturar el texto precedido por "R-XXX"
-  local captured_id = checker.capture_id()
-  if not captured_id then
-    error("No se encontró texto precedido por 'R-'.")
-  end
-  -- Encontrar coincidencia
-  return checker.compare_with_files(captured_id)
-end
-
-function M.add_link_reference()
-  local filePath = verify_file_match()
+function M.show_hidden_link()
+  local filePath = checker.verify_file_match()
   if not filePath then
     return
   end
 
-  local idLength = math.max(config.options.id_size, 2) -- Garantiza un tamaño mínimo de 2 caracteres para el ID
-  local idRef = "L-" .. id.nanoid(idLength)
-
   local posText, selectText = tops.capture_visual_selection()
   local existingData = json.read_json_file(filePath) or {}
+  selectText[1], index = utils.search_data(existingData, selectText[1])
 
+  utils.remove_subtable(existingData, index)
+  existingData = utils.reorganize_indices(existingData)
+  json.write_json_file(filePath, existingData)
+
+  tops.change_text(posText, selectText)
+end
+
+
+function M.add_link_reference(content, length)
+  local filePath = checker.verify_file_match() or path
+  if not filePath then
+    return
+  end
+
+  local existingData = json.read_json_file(filePath) or content or {}
+  local idLength = math.max(config.options.id_size, 2) or length -- Garantiza un tamaño mínimo de 2 caracteres para el ID
+  local idRef = "L-" .. id.nanoid(idLength)
+
+  if checker.compare_with_ids(existingData, idRef) then
+    print("[LinkRef] ID " .. idRef .. " encontrado, generando uno nuevo.")
+    M.add_link_reference(existingData, idLength)
+  end
+
+  local posText, selectText = tops.capture_visual_selection()
   -- Actualiza el archivo JSON con los nuevos datos
   table.insert(existingData, { [idRef] = selectText[1] })
   json.write_json_file(filePath, existingData)
@@ -58,41 +69,16 @@ function M.add_link_reference()
 end
 
 
--- Definir la función en Lua
-local function add_text_to_buffer(token)
-  local text = "<!- " .. token .. " -->"
-  -- Obtener el buffer actual
-  local buf = vim.api.nvim_get_current_buf()
-  -- Insertar el texto en la primera línea
-  vim.api.nvim_buf_set_lines(buf, 0, 0, false, {text})
-  -- Mover el cursor a la primera línea
-  vim.api.nvim_win_set_cursor(0, {1, 0})
-end
-
-
 function M.go_link_reference()
   local filePath = verify_file_match()
   if not filePath then
     return
   end
 
-  local _, selectIdRef = tops.capture_visual_selection()
+  local _, selectText = tops.capture_visual_selection() -- ref
   local existingData = json.read_json_file(filePath) or {}
-
-  local found = false
-  for _, dataRef in ipairs(existingData) do
-    for key, link in pairs(dataRef) do
-      if key == selectIdRef[1] then
-        found = true
-        url.open_in_browser(link)
-        break
-      end
-    end
-
-    if found then
-      break
-    end
-  end
+  local link = utils.search_data(existingData, selectText[1])
+  url.open_in_browser(link)
 end
 
 
@@ -107,12 +93,11 @@ function M.initial_config()
 
     utils.create_dir_if_missing(dir_path)
     utils.create_file_if_missing(file_path)
-    add_text_to_buffer(id_generated)
+    utils.add_text_to_buffer(id_generated)
     print("[LinkRef] Token de referencia creado con éxito.")
   else
     print("[LinkRef] La referencia R-" .. captured_id .. " ya existe.")
   end
 end
-
 
 return M

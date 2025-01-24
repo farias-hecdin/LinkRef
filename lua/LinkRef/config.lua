@@ -6,4 +6,3 @@ M.options = {
 }
 
 return M
-
