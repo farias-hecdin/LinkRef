@@ -70,14 +70,14 @@ end
 
 
 function M.go_link_reference()
-  local filePath = verify_file_match()
+  local filePath = checker.verify_file_match()
   if not filePath then
     return
   end
 
   local _, selectText = tops.capture_visual_selection() -- ref
   local existingData = json.read_json_file(filePath) or {}
-  local link = utils.search_data(existingData, selectText[1])
+  local link, _ = utils.search_data(existingData, selectText[1])
   url.open_in_browser(link)
 end
 

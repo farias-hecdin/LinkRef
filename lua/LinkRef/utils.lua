@@ -6,18 +6,18 @@ function M.remove_subtable(mainTable, index)
   if index <= #mainTable then
     table.remove(mainTable, index)
   else
-    error("Índice fuera de rango")
+    error("[LinkRef] Índice fuera de rango")
   end
 end
 
 
 -- Reorganizar los índices
 function M.reorganize_indices(mainTable)
-    local newTable = {}
-    for i, subtable in ipairs(mainTable) do
-        newTable[i] = subtable
-    end
-    return newTable
+  local newTable = {}
+  for i, subtable in ipairs(mainTable) do
+    newTable[i] = subtable
+  end
+  return newTable
 end
 
 
@@ -45,35 +45,33 @@ end
 
 -- Verificar si un archivo o directorio existe
 local function exists(path)
-    local stat = vim.loop.fs_stat(path)
-    return stat ~= nil
+  local stat = vim.loop.fs_stat(path)
+  return stat ~= nil
 end
 
 
 -- Crear un directorio si no existe
 function M.create_dir_if_missing(path)
-    if not exists(path) then
-        vim.loop.fs_mkdir(path, 493) -- 493 es el permiso 0755 en octal
-        print("[LinkRef] Directorio creado: " .. path)
-    else
-        print("[LinkRef] El directorio ya existe: " .. path)
-    end
+  if not exists(path) then
+    vim.loop.fs_mkdir(path, 493) -- 493 es el permiso 0755 en octal
+    print("[LinkRef] Directorio creado: " .. path)
+  end
 end
 
 
 -- Crear un archivo si no existe
 function M.create_file_if_missing(path)
-    if not exists(path) then
-        local file = io.open(path, "w")
-        if file then
-            file:close()
-            print("Archivo creado: " .. path)
-        else
-            print("Error al crear el archivo: " .. path)
-        end
+  if not exists(path) then
+    local file = io.open(path, "w")
+    if file then
+      file:close()
+      print("[LinkRef] Archivo creado: " .. path)
     else
-        print("El archivo ya existe: " .. path)
+      print("[LinkRef] Error al crear el archivo: " .. path)
     end
+  else
+    print("[LinkRef] El archivo ya existe: " .. path)
+  end
 end
 
 return M

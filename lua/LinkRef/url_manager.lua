@@ -1,21 +1,35 @@
 local M = {}
 
--- Función para abrir el enlace en el navegador
+-- Abrir el enlace en el navegador
 function M.open_in_browser(url)
-    -- Comando para abrir el enlace en el navegador
-    local command
-    if vim.fn.has("unix") == 1 then
-        command = "xdg-open " .. url
-    elseif vim.fn.has("mac") == 1 then
-        command = "open " .. url
-    elseif vim.fn.has("win32") == 1 then
-        command = "start " .. url
-    else
-        error("Sistema operativo no soportado")
-    end
+  local apps = nil
+  if vim.fn.has("unix") == 1 then
+    apps = {"xdg-open", "gvfs-open", "gnome-open", "wslview"}
+  elseif vim.fn.has("mac") == 1 then
+    apps = {"open"}
+  elseif vim.fn.has("win32") == 1 then
+    apps = {"start"}
+  else
+    error("[LinkRef] Sistema operativo no soportado.")
+  end
 
-    -- Ejecutar el comando
-    vim.cmd("!" .. command)
+  for _, app in ipairs(apps) do
+    if vim.fn.executable(app) == 1 then
+      local command = app .. " " .. vim.fn.shellescape(url)
+      -- Ejecutar el comando
+      vim.fn.jobstart(command, {
+        detach = true,
+        on_exit = function(_, code, _)
+          if code ~= 0 then
+            print("[LinkRef] Failed to open: " .. url)
+          else
+            print("[LinkRef] Opening: " .. url)
+          end
+        end,
+      })
+      return
+    end
+  end
 end
 
 return M

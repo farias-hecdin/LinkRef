@@ -14,7 +14,7 @@ end
 function M.read_json_file(file_path)
   local file = io.open(file_path, "r")
   if not file then
-    error("No se pudo abrir el archivo: " .. file_path)
+    error("[LinkRef] No se pudo abrir el archivo: " .. file_path)
   end
 
   local content = file:read("*all")
@@ -30,7 +30,7 @@ end
 function M.write_json_file(file_path, data)
   local file = io.open(file_path, "w")
   if not file then
-    error("No se pudo abrir el archivo: " .. file_path)
+    error("[LinkRef] No se pudo abrir el archivo: " .. file_path)
   end
   file:write(Json.encode(data))
   file:close()

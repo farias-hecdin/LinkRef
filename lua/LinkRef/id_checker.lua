@@ -4,7 +4,7 @@ function M.verify_file_match()
   -- Capturar el texto precedido por "R-XXX"
   local captured_id = M.capture_id()
   if not captured_id then
-    error("No se encontró texto precedido por 'R-'.")
+    error("[LinkRef] No se encontró texto precedido por 'R-'.")
   end
   -- Encontrar coincidencia
   return M.compare_with_files(captured_id)
