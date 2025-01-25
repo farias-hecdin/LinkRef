@@ -1,5 +1,6 @@
 local M = {}
 local Json = require("vendor.json_lua.json")
+local notify = require("LinkRef.notify")
 
 -- Función para verificar si un archivo JSON está vacío
 function M.is_json_file_empty(file_path)
@@ -14,7 +15,7 @@ end
 function M.read_json_file(file_path)
   local file = io.open(file_path, "r")
   if not file then
-    error("[LinkRef] No se pudo abrir el archivo: " .. file_path)
+    notify.error("[LinkRef] No se pudo abrir el archivo: " .. file_path)
   end
 
   local content = file:read("*all")
@@ -30,7 +31,7 @@ end
 function M.write_json_file(file_path, data)
   local file = io.open(file_path, "w")
   if not file then
-    error("[LinkRef] No se pudo abrir el archivo: " .. file_path)
+    notify.error("[LinkRef] No se pudo abrir el archivo: " .. file_path)
   end
   file:write(Json.encode(data))
   file:close()

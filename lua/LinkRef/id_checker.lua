@@ -1,26 +1,15 @@
 local M = {}
+local notify = require("LinkRef.notify")
 
 function M.verify_file_match()
   -- Capturar el texto precedido por "R-XXX"
   local captured_id = M.capture_id()
   if not captured_id then
-    error("[LinkRef] No se encontró texto precedido por 'R-'.")
+    notify.error("[LinkRef] No se encontró texto precedido por 'R-'.")
   end
+
   -- Encontrar coincidencia
   return M.compare_with_files(captured_id)
-end
-
-
--- Comprabar si el ID existe
-function M.compare_with_ids(content, id)
-  for _, item in ipairs(content) do
-    for key, _ in pairs(item) do
-      if key == id then
-        return true
-      end
-    end
-  end
-  return false
 end
 
 
@@ -44,20 +33,23 @@ function M.capture_id()
 end
 
 
--- Función para comparar el texto capturado con los nombres de archivos en el directorio nvim/LinkRef
+-- Comparar el texto capturado con los nombres de archivos en el directorio nvim/LinkRef
 function M.compare_with_files(captured_text)
-  -- Directorio donde se encuentran los archivos
-  local directory = vim.fn.stdpath('data') .. '/LinkRef/'
-  -- Obtener la lista de archivos en el directorio
-  local files = vim.fn.globpath(directory, "*", false, true)
-  -- Recorrer la lista de archivos y comparar con el texto capturado
-  for _, file in ipairs(files) do
-    local filename = vim.fn.fnamemodify(file, ":t") -- Obtener solo el nombre del archivo
-    if filename == captured_text .. ".json" then
-      return file
-    end
+  local fn = vim.fn
+  local fs = vim.fs
+  local target = captured_text .. ".json"
+
+  -- Construir path usando API segura
+  local dir = fs.joinpath(fn.stdpath('data'), 'LinkRef')
+  local file_path = fs.joinpath(dir, target)
+
+  -- Verificación directa del archivo
+  if fs.find(target, { path = dir, type = 'file', limit = 1 })[1] then
+    return file_path
   end
-  error("[LinkRef] El ID capturado no coincide con ningún archivo en el directorio LinkRef.")
+
+  -- Manejo de error mejorado
+  notify.error("[LinkRef] ID no encontrado: '"..captured_text.."'\n".. "Buscado en: "..dir)
   return nil
 end
 

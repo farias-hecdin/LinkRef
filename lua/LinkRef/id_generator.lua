@@ -17,15 +17,15 @@ local bitand = bit32 and bit32.band or function(a, b)
 end
 
 
-M.nanoid = function(size)
+M.nanoid = function(size, custom)
   size = size or 21
-  local alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  local alphabet = custom or "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
   local alphabet_length = #alphabet
   local id = {}
 
   for i = 1, size do
     local byte = math.random(255)
-    local index = bitand(byte, 63) % alphabet_length + 1
+    local index = bitand(byte, 62) % alphabet_length + 1
     id[i] = alphabet:sub(index, index)
   end
 

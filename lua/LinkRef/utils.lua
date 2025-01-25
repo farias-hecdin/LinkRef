@@ -1,33 +1,30 @@
 local M = {}
+local notify = require("LinkRef.notify")
 
 -- Eliminar una subtabla por su índice
 function M.remove_subtable(mainTable, index)
-  -- Verificar si el índice es válido
-  if index <= #mainTable then
+  local size = #mainTable
+  if index > 0 and index <= size then
     table.remove(mainTable, index)
   else
-    error("[LinkRef] Índice fuera de rango")
+    notify.error("[LinkRef] Índice fuera de rango: "..index.." (Tamaño: "..size..")", 2)
   end
 end
 
 
 -- Reorganizar los índices
 function M.reorganize_indices(mainTable)
-  local newTable = {}
-  for i, subtable in ipairs(mainTable) do
-    newTable[i] = subtable
-  end
-  return newTable
+  return table.move(mainTable, 1, #mainTable, 1, {})
 end
 
 
--- Buscar valor e índice en el registro
-function M.search_data(records, matching_key)
-  for index, record in ipairs(records) do
-    for key, value in pairs(record) do
-      if key == matching_key then
-        return value, index
-      end
+-- Extraer el valor e índice de un registro
+function M.extract_value_and_index(records, matching_key)
+  for index = 1, #records do
+    local record = records[index]
+    local key = next(record)  -- Obtiene la primera y única clave
+    if key == matching_key then
+      return record[key], index
     end
   end
 end
@@ -35,10 +32,10 @@ end
 
 -- Definir la función en Lua
 function M.add_text_to_buffer(token)
-  local text = "<!- " .. token .. " -->"
-  local buf = vim.api.nvim_get_current_buf()
-  -- Insertar el texto en la primera línea y mover el cursor
-  vim.api.nvim_buf_set_lines(buf, 0, 0, false, {text})
+  local comment = string.format("<!-- %s -->", token)
+
+  -- Insertar texto y actualizar cursor en una sola operación
+  vim.api.nvim_buf_set_lines(vim.api.nvim_get_current_buf(), 0, 0, false, {comment})
   vim.api.nvim_win_set_cursor(0, {1, 0})
 end
 
@@ -54,7 +51,7 @@ end
 function M.create_dir_if_missing(path)
   if not exists(path) then
     vim.loop.fs_mkdir(path, 493) -- 493 es el permiso 0755 en octal
-    print("[LinkRef] Directorio creado: " .. path)
+    notify.info("[LinkRef] Directorio creado: " .. path)
   end
 end
 
@@ -65,12 +62,12 @@ function M.create_file_if_missing(path)
     local file = io.open(path, "w")
     if file then
       file:close()
-      print("[LinkRef] Archivo creado: " .. path)
+      notify.info("[LinkRef] Archivo creado: " .. path)
     else
-      print("[LinkRef] Error al crear el archivo: " .. path)
+      notify.error("[LinkRef] Error al crear el archivo: " .. path)
     end
   else
-    print("[LinkRef] El archivo ya existe: " .. path)
+    notify.warn("[LinkRef] El archivo ya existe: " .. path)
   end
 end
 

@@ -1,8 +1,9 @@
 local M = {}
+local notify = require("LinkRef.notify")
 
 -- Abrir el enlace en el navegador
 function M.open_in_browser(url)
-  local apps = nil
+  local apps = {}
   if vim.fn.has("unix") == 1 then
     apps = {"xdg-open", "gvfs-open", "gnome-open", "wslview"}
   elseif vim.fn.has("mac") == 1 then
@@ -10,7 +11,7 @@ function M.open_in_browser(url)
   elseif vim.fn.has("win32") == 1 then
     apps = {"start"}
   else
-    error("[LinkRef] Sistema operativo no soportado.")
+    notify.error("[LinkRef] Sistema operativo no soportado.")
   end
 
   for _, app in ipairs(apps) do
@@ -21,9 +22,9 @@ function M.open_in_browser(url)
         detach = true,
         on_exit = function(_, code, _)
           if code ~= 0 then
-            print("[LinkRef] Failed to open: " .. url)
+            notify.error("[LinkRef] Failed to open: " .. url)
           else
-            print("[LinkRef] Opening: " .. url)
+            notify.info("[LinkRef] Opening: " .. url)
           end
         end,
       })

@@ -1,93 +1,77 @@
 local M = {}
 
---- Select text in Visual Mode
--- (thanks to: https://github.com/antonk52/markdowny.nvim)
+-- Cache de funciones de la API de Neovim
+local api = vim.api
+local fn = vim.fn
+local str_byteindex = vim.str_byteindex
+local str_utfindex = vim.str_utfindex
 
---- To get the line at the given line number
+
+--- Obtiene el texto de la línea especificada
 local get_line = function(line_num)
-  return vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1]
+  return api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1] or ''
 end
 
 
---- To get the position of the given mark
+--- Obtiene la posición ajustada de una marca
 local get_mark = function(mark)
-  local position = vim.api.nvim_buf_get_mark(0, mark)
-  return { position[1], position[2] + 1 }
+  local pos = api.nvim_buf_get_mark(0, mark)
+  return { pos[1], pos[2] + 1 } -- Convertir a 1-based
 end
 
 
---- To get the first byte of the character at the given position
-local get_first_byte = function(pos)
-  local byte = string.byte(get_line(pos[1]):sub(pos[2], pos[2]))
-  if not byte then
-    return pos
-  end
+--- Manejo optimizado de posiciones UTF-8
+local adjust_position = function(pos, mode)
+  local line = get_line(pos[1])
+  local byte_idx = pos[2] - 1 -- Convertir a índice de bytes 0-based
 
-  while byte >= 0x80 and byte < 0xc0 do
-    pos[2] = pos[2] - 1
-    byte = string.byte(get_line(pos[1]):sub(pos[2], pos[2]))
+  if mode == 'start' then
+    local char_idx = str_utfindex(line, byte_idx)
+    return str_byteindex(line, char_idx) + 1 -- 1-based
+  else
+    local char_idx = str_utfindex(line, byte_idx)
+    local end_byte = str_byteindex(line, char_idx + 1) or #line
+    return end_byte -- 0-based (no +1 para posición final)
   end
-  return pos
 end
 
 
---- To get the last byte of the character at the given position
-local get_last_byte = function(pos)
-  if not pos then
-    return nil
-  end
-
-  local byte = string.byte(get_line(pos[1]):sub(pos[2], pos[2]))
-  if not byte then
-    return pos
-  end
-
-  if byte >= 0xf0 then
-    pos[2] = pos[2] + 3
-  elseif byte >= 0xe0 then
-    pos[2] = pos[2] + 2
-  elseif byte >= 0xc0 then
-    pos[2] = pos[2] + 1
-  end
-  return pos
-end
-
-
---- To get the text between the given selection
-local get_text = function(selection)
-  local first_pos, last_pos = selection.first_pos, selection.last_pos
-  last_pos[2] = math.min(last_pos[2], #get_line(last_pos[1]))
-  return vim.api.nvim_buf_get_text(0, first_pos[1] - 1, first_pos[2] - 1, last_pos[1] - 1, last_pos[2], {})
-end
-
-
---- Capture the currently selected text
+--- Captura la selección visual con manejo eficiente de UTF-8
 M.capture_visual_selection = function()
-  local s = get_first_byte(get_mark('<'))
-  local e = get_last_byte(get_mark('>'))
+  local visual_mode = fn.visualmode()
+  local s_mark = get_mark('<')
+  local e_mark = get_mark('>')
 
-  if s == nil or e == nil then
-    return
+  if not s_mark or not e_mark then return end
+
+  -- Ajustar posiciones para UTF-8
+  s_mark[2] = adjust_position(s_mark, 'start')
+  e_mark[2] = adjust_position(e_mark, 'end')
+
+  -- Manejo de modo línea
+  if visual_mode == 'V' then
+    local e_line = get_line(e_mark[1])
+    s_mark[2] = 1
+    e_mark[2] = #e_line + 1
   end
-  if vim.fn.visualmode() == 'V' then
-    e[2] = #get_line(e[1])
-  end
 
-  local selection = {first_pos = s, last_pos = e}
-  local text = get_text(selection)
-
-  return selection, text
+  -- Obtener texto
+  local text = api.nvim_buf_get_text(0, s_mark[1] - 1, s_mark[2] - 1, e_mark[1] - 1, e_mark[2], {})
+  return { first_pos = s_mark, last_pos = e_mark }, text
 end
 
 
---- Change the text at the given selection
+--- Modificación optimizada del texto
 M.change_text = function(selection, text)
-  if not selection then
-    return
-  end
-  local first_pos, last_pos = selection.first_pos, selection.last_pos
-  vim.api.nvim_buf_set_text(0, first_pos[1] - 1, first_pos[2] - 1, last_pos[1] - 1, last_pos[2], text)
-end
+  if not selection then return end
 
+  api.nvim_buf_set_text(
+    0,
+    selection.first_pos[1] - 1, selection.first_pos[2] - 1,
+    selection.last_pos[1] - 1, selection.last_pos[2],
+    text
+  )
+end
 
 return M
+
