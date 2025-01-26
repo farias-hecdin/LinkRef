@@ -29,8 +29,8 @@ Estas son las opciones de configuración predeterminadas:
 
 ```lua
 M.options = {
-  id_length = 3, -- <int> Longitud del ID.
-  custom_alphabet = nil -- <string> Caracteres validos para el ID (ej: 0123abc...).
+  id_length = 3, -- <int> ID length.
+  custom_alphabet = nil -- <string> Valid characters for ID (0123abc...).
 }
 ```
 
@@ -45,6 +45,10 @@ vim.keymap.set('v', '<leader>xg', ":lua require('LinkRef').go_link_reference()<C
 vim.keymap.set('v', '<leader>xs', ":lua require('LinkRef').show_hidden_link()<CR>", opts)
 ```
 
+## 🗒️ Agradecimientos a
+
+* [`rxi/json.lua`](https://github.com/rxi/json.lua): Una biblioteca JSON para Lua.
+
 ## 🛡️ Licencia
 
-CSSVarViewer está bajo la licencia MIT. Consulta el archivo `LICENSE` para obtener más información.
+LinkRef está bajo la licencia MIT. Consulta el archivo `LICENSE` para obtener más información.
