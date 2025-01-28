@@ -1,11 +1,31 @@
 local M = {}
 local notify = require("LinkRef.notify")
 
+--- Capturar todas los ID que comiencen con "L-" seguido de N caracteres
+function M.capture_L_words(length)
+  local captured_words = {}
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local pattern = "L%-" .. string.rep("[%a%d]", length)
+
+  for _, line in ipairs(lines) do
+    for word in line:gmatch(pattern) do
+      table.insert(captured_words, word)
+    end
+  end
+
+  if #captured_words == 0 then
+    notify.warn("No se han encontrado IDs válidos.")
+    return nil
+  end
+  return captured_words
+end
+
+
 function M.verify_file_match()
   -- Capturar el texto precedido por "R-XXX"
   local captured_id = M.capture_id()
   if not captured_id then
-    notify.error("[LinkRef] No se encontró texto precedido por 'R-'.")
+    notify.error("No se encontró texto precedido por 'R-'.")
   end
 
   -- Encontrar coincidencia
@@ -49,7 +69,7 @@ function M.compare_with_files(captured_text)
   end
 
   -- Manejo de error mejorado
-  notify.error("[LinkRef] ID no encontrado: '"..captured_text.."'\n".. "Buscado en: "..dir)
+  notify.error("ID no encontrado: '"..captured_text.."'\n".. "Buscado en: "..dir)
   return nil
 end
 

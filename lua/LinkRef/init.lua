@@ -7,6 +7,7 @@ local json = require("LinkRef.json_manager")
 local checker = require('LinkRef.id_checker')
 local tops = require("LinkRef.select_text")
 local notify = require("LinkRef.notify")
+local Log = require("vendor.log").info
 
 M.setup = function(options)
   -- Merge the user-provided options with the default options
@@ -19,11 +20,64 @@ M.setup = function(options)
       desc = 'LinkRef keymaps',
       callback = function()
         vim.keymap.set('n', '<leader>xn', ":lua require('LinkRef').initial_config()<CR>", opts)
+        vim.keymap.set('n', '<leader>xa', ":lua require('LinkRef').analyze_buffer()<CR>", opts)
         vim.keymap.set('v', '<leader>xl', ":lua require('LinkRef').add_link_reference()<CR>", opts)
         vim.keymap.set('v', '<leader>xg', ":lua require('LinkRef').go_link_reference()<CR>", opts)
         vim.keymap.set('v', '<leader>xs', ":lua require('LinkRef').show_hidden_link()<CR>", opts)
       end,
     })
+  end
+end
+
+
+-- Analizar buffer
+function M.analyze_buffer()
+  local filePath = checker.verify_file_match()
+  if not filePath then
+    return
+  end
+
+  local ids_captured = checker.capture_L_words(config.options.id_length) or {}
+  local records = json.read_json_file(filePath) or {}
+
+  if #ids_captured == 0 or #records == 0 then
+    return
+  end
+
+  -- Crear conjunto para búsquedas O(1)
+  local id_set = {}
+  for _, i in ipairs(ids_captured) do
+    id_set[i] = true
+  end
+
+  -- Colectar índices y claves a eliminar
+  local indices_to_delete = {}
+  local delete_keys = {}
+
+  for index = 1, #records do
+    local record = records[index]
+    local key = next(record)
+    if not id_set[key] then
+      table.insert(indices_to_delete, index)
+      table.insert(delete_keys, key)
+    end
+  end
+
+  -- Procesar eliminaciones
+  if #indices_to_delete > 0 then
+    -- Eliminar en orden inverso para mantener índices válidos
+    table.sort(indices_to_delete, function(a, b) return a > b end)
+    for _, index in ipairs(indices_to_delete) do
+      utils.remove_subtable(records, index)
+    end
+
+    -- Reorganizar y guardar una sola vez
+    records = utils.reorganize_indices(records)
+    json.write_json_file(filePath, records)
+
+    notify.info("Se eliminó " .. #indices_to_delete .. " IDS obsoletos.")
+  else
+    notify.info("No hay IDs obsoletos para eliminar.")
   end
 end
 
@@ -37,10 +91,16 @@ function M.show_hidden_link()
 
   -- Capturar el ID y extraer su valor
   local posText, selectText = tops.capture_visual_selection()
-  local existingData = json.read_json_file(filePath) or {}
-  selectText[1], index = utils.extract_value_and_index(existingData, selectText[1])
+  local selectTextLen = string.len(selectText[1])
+  local idTextLength = config.options.id_length + 2
+  if selectTextLen > idTextLength then
+    notify.warn("ID inválido. La longitud proporcionada es mayor a la permitida: "..idTextLength)
+    return
+  end
 
   -- Actualizar el registro Json
+  local existingData = json.read_json_file(filePath) or {}
+  selectText[1], index = utils.extract_value_and_index(existingData, selectText[1])
   utils.remove_subtable(existingData, index)
   existingData = utils.reorganize_indices(existingData)
   json.write_json_file(filePath, existingData)
@@ -129,9 +189,9 @@ function M.initial_config()
     utils.create_dir_if_missing(dir_path)
     utils.create_file_if_missing(file_path)
     utils.add_text_to_buffer(id_generated)
-    notify.info("[LinkRef] Token de referencia creado con éxito.")
+    notify.info("Token de referencia creado con éxito.")
   else
-    notify.warn("[LinkRef] La referencia R-" .. captured_id .. " ya existe.")
+    notify.warn("La referencia R-" .. captured_id .. " ya existe.")
   end
 end
 

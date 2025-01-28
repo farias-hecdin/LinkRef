@@ -11,7 +11,7 @@ function M.open_in_browser(url)
   elseif vim.fn.has("win32") == 1 then
     apps = {"start"}
   else
-    notify.error("[LinkRef] Sistema operativo no soportado.")
+    notify.error("Sistema operativo no soportado.")
   end
 
   for _, app in ipairs(apps) do
@@ -22,9 +22,9 @@ function M.open_in_browser(url)
         detach = true,
         on_exit = function(_, code, _)
           if code ~= 0 then
-            notify.error("[LinkRef] Failed to open: " .. url)
+            notify.error("Failed to open: " .. url)
           else
-            notify.info("[LinkRef] Opening: " .. url)
+            notify.info("Opening: " .. url)
           end
         end,
       })

@@ -7,7 +7,7 @@ function M.remove_subtable(mainTable, index)
   if index > 0 and index <= size then
     table.remove(mainTable, index)
   else
-    notify.error("[LinkRef] Índice fuera de rango: "..index.." (Tamaño: "..size..")", 2)
+    notify.error("Índice fuera de rango: "..index.." (Tamaño: "..size..")", 2)
   end
 end
 
@@ -51,7 +51,7 @@ end
 function M.create_dir_if_missing(path)
   if not exists(path) then
     vim.loop.fs_mkdir(path, 493) -- 493 es el permiso 0755 en octal
-    notify.info("[LinkRef] Directorio creado: " .. path)
+    notify.info("Directorio creado: " .. path)
   end
 end
 
@@ -62,12 +62,12 @@ function M.create_file_if_missing(path)
     local file = io.open(path, "w")
     if file then
       file:close()
-      notify.info("[LinkRef] Archivo creado: " .. path)
+      notify.info("Archivo creado: " .. path)
     else
-      notify.error("[LinkRef] Error al crear el archivo: " .. path)
+      notify.error("Error al crear el archivo: " .. path)
     end
   else
-    notify.warn("[LinkRef] El archivo ya existe: " .. path)
+    notify.warn("El archivo ya existe: " .. path)
   end
 end
 

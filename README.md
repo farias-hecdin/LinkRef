@@ -28,9 +28,10 @@ Usando [`folke/lazy.nvim`](https://github.com/folke/lazy.nvim):
 Estas son las opciones de configuración predeterminadas:
 
 ```lua
-M.options = {
-  id_length = 3, -- <int> ID length.
-  custom_alphabet = nil -- <string> Valid characters for ID (0123abc...).
+{
+  id_length = 3, -- <int> Longitud del ID.
+  custom_alphabet = nil, -- <string> Caracteres validos para el ID (ej: 0123abc...).
+  disable_keymaps = false, -- <boolean> Indicates whether keymaps are disabled.
 }
 ```
 
@@ -39,11 +40,16 @@ M.options = {
 Estos son los atajos de teclado predeterminados:
 
 ```lua
+local opts = {buffer = 0, silent = true}
+
 vim.keymap.set('n', '<leader>xn', ":lua require('LinkRef').initial_config()<CR>", opts)
+vim.keymap.set('n', '<leader>xa', ":lua require('LinkRef').analyze_buffer()<CR>", opts)
 vim.keymap.set('v', '<leader>xl', ":lua require('LinkRef').add_link_reference()<CR>", opts)
 vim.keymap.set('v', '<leader>xg', ":lua require('LinkRef').go_link_reference()<CR>", opts)
 vim.keymap.set('v', '<leader>xs', ":lua require('LinkRef').show_hidden_link()<CR>", opts)
 ```
+
+Para más información, visite [FAQ](FAQ.md)
 
 ## 🗒️ Agradecimientos a
 
