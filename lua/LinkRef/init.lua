@@ -37,10 +37,10 @@ function M.analyze_buffer()
     return
   end
 
-  local ids_captured = checker.capture_L_words(config.options.id_length) or {}
+  local ids_captured = checker.capture_L_words(config.options.id_length, false) or {}
   local records = json.read_json_file(filePath) or {}
 
-  if #ids_captured == 0 or #records == 0 then
+  if #records == 0 then
     return
   end
 
@@ -74,15 +74,14 @@ function M.analyze_buffer()
     -- Reorganizar y guardar una sola vez
     records = utils.reorganize_indices(records)
     json.write_json_file(filePath, records)
-
-    notify.info("Se eliminó " .. #indices_to_delete .. " IDS obsoletos.")
+    notify.info("Se eliminó " .. #indices_to_delete .. " IDs obsoletos.")
   else
     notify.info("No hay IDs obsoletos para eliminar.")
   end
 end
 
 
--- Mostrar el enlace oculto
+--- Mostrar el enlace oculto
 function M.show_hidden_link()
   local filePath = checker.verify_file_match()
   if not filePath then
@@ -100,17 +99,18 @@ function M.show_hidden_link()
 
   -- Actualizar el registro Json
   local existingData = json.read_json_file(filePath) or {}
-  selectText[1], index = utils.extract_value_and_index(existingData, selectText[1])
-  utils.remove_subtable(existingData, index)
-  existingData = utils.reorganize_indices(existingData)
-  json.write_json_file(filePath, existingData)
+  selectText[1], _ = utils.extract_value_and_index(existingData, selectText[1])
+  -- INFO: No actualizar el registro para evitar borrar copias de un ID en el documento
+  -- utils.remove_subtable(existingData, index)
+  -- existingData = utils.reorganize_indices(existingData)
+  -- json.write_json_file(filePath, existingData)
 
   -- Sutituir el ID por el valor
   tops.change_text(posText, selectText)
 end
 
 
--- Añadir un ID
+--- Añadir un ID
 function M.add_link_reference()
   local filePath = checker.verify_file_match()
   if not filePath then
@@ -121,23 +121,26 @@ function M.add_link_reference()
   local existingData = json.read_json_file(filePath) or {}
   local idLength = math.max(config.options.id_length, 2)  -- Mínimo 2 caracteres
   local alphabet = config.options.custom_alphabet
-  local maxAttempts = 100
+  local maxAttempts = 50
 
   -- Preprocesar IDs existentes para búsquedas rápidas
   local existingIDs = {}
   for _, record in ipairs(existingData) do
-    local idx = next(record) -- Cada registro solo tiene una clave
+    local idx = next(record) -- Si cada registro solo tiene una clave
     existingIDs[idx] = true
   end
 
-  -- Generador de ID
-  local function generate_unique_id()
+
+  -- Generador de IDs
+  function generate_unique_id()
     local attempts = 0
     local idRef
+
     repeat
       attempts = attempts + 1
       if attempts > maxAttempts then
         notify.error("No se pudo generar un ID único después de " .. maxAttempts .. " intentos.")
+        return nil
       end
       idRef = "L-" .. id.nanoid(idLength, alphabet)
     until not existingIDs[idRef]
@@ -147,26 +150,31 @@ function M.add_link_reference()
     return idRef
   end
 
+
   -- Operaciones de escritura
   local take_id = generate_unique_id()
+  if take_id == nil then
+    return
+  end
+
   local posText, selectText = tops.capture_visual_selection()
   table.insert(existingData, { [take_id] = selectText[1] })
   json.write_json_file(filePath, existingData)
 
-  -- Actualización de texto
+  -- Actualizar el texto
   selectText[1] = take_id
   tops.change_text(posText, selectText)
 end
 
 
--- Abrir el link con el navegador
+--- Abrir el link con el navegador
 function M.go_link_reference()
   local filePath = checker.verify_file_match()
   if not filePath then
     return
   end
 
-  -- Capturar el ID
+  -- Obten el link y abrelo en el navegador
   local _, selectText = tops.capture_visual_selection()
   local existingData = json.read_json_file(filePath) or {}
   local link, _ = utils.extract_value_and_index(existingData, selectText[1])
@@ -174,18 +182,18 @@ function M.go_link_reference()
 end
 
 
--- Inicializar un registro de IDs
+--- Inicializar un registro de IDs
 function M.initial_config()
   local captured_id = checker.capture_id()
 
-  -- Si el doc. no tiene un ID token
+  -- Si el documento no tiene un ID token, añade uno nuevo
   if not captured_id then
     local id_token = id.nanoid(21)
     local id_generated = "R-" .. id_token
     local dir_path = string.format("%s/LinkRef/", vim.fn.stdpath('data'))
     local file_path = string.format("%s%s.json", dir_path, id_token)
 
-    -- Crea los elementos correspondientes y añade el token al inicio del doc.
+    -- Crea los elementos correspondientes y añade el token al inicio del documento
     utils.create_dir_if_missing(dir_path)
     utils.create_file_if_missing(file_path)
     utils.add_text_to_buffer(id_generated)

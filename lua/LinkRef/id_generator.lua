@@ -25,7 +25,7 @@ M.nanoid = function(size, custom)
 
   for i = 1, size do
     local byte = math.random(255)
-    local index = bitand(byte, 62) % alphabet_length + 1
+    local index = bitand(byte, 63) % alphabet_length + 1
     id[i] = alphabet:sub(index, index)
   end
 

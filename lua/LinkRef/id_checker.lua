@@ -2,7 +2,7 @@ local M = {}
 local notify = require("LinkRef.notify")
 
 --- Capturar todas los ID que comiencen con "L-" seguido de N caracteres
-function M.capture_L_words(length)
+function M.capture_L_words(length, show)
   local captured_words = {}
   local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local pattern = "L%-" .. string.rep("[%a%d]", length)
@@ -13,7 +13,7 @@ function M.capture_L_words(length)
     end
   end
 
-  if #captured_words == 0 then
+  if #captured_words == 0 and show then
     notify.warn("No se han encontrado IDs válidos.")
     return nil
   end
