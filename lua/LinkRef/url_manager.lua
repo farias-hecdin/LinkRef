@@ -1,7 +1,7 @@
 local M = {}
 local notify = require("LinkRef.notify")
 
--- Abrir el enlace en el navegador
+--- Abrir el enlace en el navegador
 function M.open_in_browser(url)
   local apps = {}
   if vim.fn.has("unix") == 1 then
@@ -17,6 +17,7 @@ function M.open_in_browser(url)
   for _, app in ipairs(apps) do
     if vim.fn.executable(app) == 1 then
       local command = app .. " " .. vim.fn.shellescape(url)
+
       -- Ejecutar el comando
       vim.fn.jobstart(command, {
         detach = true,
@@ -28,7 +29,7 @@ function M.open_in_browser(url)
           end
         end,
       })
-      return
+      break
     end
   end
 end

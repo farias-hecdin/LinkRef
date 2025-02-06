@@ -1,11 +1,8 @@
 local M = {}
-
--- Cache de funciones de la API de Neovim
 local api = vim.api
 local fn = vim.fn
 local str_byteindex = vim.str_byteindex
 local str_utfindex = vim.str_utfindex
-
 
 --- Obtiene el texto de la línea especificada
 local get_line = function(line_num)
@@ -63,7 +60,9 @@ end
 
 --- Modificación optimizada del texto
 M.change_text = function(selection, text)
-  if not selection then return end
+  if not selection then
+    return
+  end
 
   api.nvim_buf_set_text(
     0,
@@ -74,4 +73,3 @@ M.change_text = function(selection, text)
 end
 
 return M
-
