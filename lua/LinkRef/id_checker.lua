@@ -1,6 +1,27 @@
 local M = {}
 local notify = require("LinkRef.notify")
 
+--- Encontrar todas las coincidencias con sus posiciones
+function M.find_matches(content)
+  local matches = {}
+  local pattern = "%]%((L%-[%a%d]+)%)"
+  local start_idx = 1
+
+  while true do
+    local start_pos, end_pos, captured = content:find(pattern, start_idx)
+    if not start_pos then
+      break
+    end
+
+    table.insert(matches, {start_pos = start_pos, end_pos = end_pos, text = captured})
+
+    -- Continuar después de esta coincidencia
+    start_idx = end_pos + 1
+  end
+  return matches
+end
+
+
 --- Capturar todas los ID que comiencen con "L-" seguido de N caracteres
 function M.capture_L_words(length, show)
   local captured_words = {}

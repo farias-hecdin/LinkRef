@@ -21,9 +21,10 @@ M.setup = function(options)
       callback = function()
         vim.keymap.set('n', '<leader>xn', ":lua require('LinkRef').initial_config()<CR>", opts)
         vim.keymap.set('n', '<leader>xa', ":lua require('LinkRef').analyze_buffer()<CR>", opts)
-        vim.keymap.set('v', '<leader>xl', ":lua require('LinkRef').add_link_reference()<CR>", opts)
-        vim.keymap.set('v', '<leader>xg', ":lua require('LinkRef').go_link_reference()<CR>", opts)
-        vim.keymap.set('v', '<leader>xs', ":lua require('LinkRef').show_hidden_link()<CR>", opts)
+        vim.keymap.set('n', '<leader>xg', ":lua require('LinkRef').go_captured()<CR>", opts)
+        vim.keymap.set('v', '<leader>xg', ":lua require('LinkRef').go_selected()<CR>", opts)
+        vim.keymap.set('v', '<leader>xl', ":lua require('LinkRef').add_identifier()<CR>", opts)
+        vim.keymap.set('v', '<leader>xs', ":lua require('LinkRef').show_content()<CR>", opts)
       end,
     })
   end
@@ -82,7 +83,7 @@ end
 
 
 --- Mostrar el enlace oculto
-function M.show_hidden_link()
+function M.show_content()
   local filePath = checker.verify_file_match()
   if not filePath then
     return
@@ -111,7 +112,7 @@ end
 
 
 --- Añadir un ID
-function M.add_link_reference()
+function M.add_identifier()
   local filePath = checker.verify_file_match()
   if not filePath then
     return
@@ -167,17 +168,42 @@ function M.add_link_reference()
 end
 
 
---- Abrir el link con el navegador
-function M.go_link_reference()
+--- Abrir el link con el navegador en el modo NORMAL
+function M.go_captured()
+  local line_num = vim.api.nvim_win_get_cursor(0)[1]
+  local line_content = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1]
+  local cursor_col = vim.api.nvim_win_get_cursor(0)[2] + 1
+  local matches = checker.find_matches(line_content)
+
+  if #matches > 0 then
+    for _, match in ipairs(matches) do
+      -- Verificar si el cursor está dentro de esta coincidencia
+      if cursor_col >= match.start_pos and cursor_col <= match.end_pos then
+        M.go_selected(match.text)
+        return
+      end
+    end
+    notify.info("Cursor no está dentro de ninguna coincidencia")
+  end
+end
+
+
+--- Abrir el link con el navegador en el modo VISUAL
+function M.go_selected(captured)
   local filePath = checker.verify_file_match()
   if not filePath then
     return
   end
 
   -- Obten el link y abrelo en el navegador
-  local _, selectText = tops.capture_visual_selection()
+  if not captured then
+    local _, selectText = tops.capture_visual_selection()
+    captured = selectText[1]
+  end
+
   local existingData = json.read_json_file(filePath) or {}
-  local link, _ = utils.extract_value_and_index(existingData, selectText[1])
+  local link, _ = utils.extract_value_and_index(existingData, captured)
+  Log(link)
   url.open_in_browser(link)
 end
 
