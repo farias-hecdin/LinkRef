@@ -7,7 +7,6 @@ local json = require("LinkRef.json_manager")
 local checker = require('LinkRef.id_checker')
 local tops = require("LinkRef.select_text")
 local notify = require("LinkRef.notify")
-local Log = require("vendor.log").info
 
 M.setup = function(options)
   -- Merge the user-provided options with the default options
@@ -203,7 +202,6 @@ function M.go_selected(captured)
 
   local existingData = json.read_json_file(filePath) or {}
   local link, _ = utils.extract_value_and_index(existingData, captured)
-  Log(link)
   url.open_in_browser(link)
 end
 
