@@ -42,11 +42,11 @@ Estos son los atajos de teclado predeterminados:
 ```lua
 local opts = {buffer = 0, silent = true}
 
-vim.keymap.set('n', '<leader>xn', ":lua require('LinkRef').initial_config()<CR>", opts)
+vim.keymap.set('n', '<leader>xi', ":lua require('LinkRef').initial_config()<CR>", opts)
 vim.keymap.set('n', '<leader>xa', ":lua require('LinkRef').analyze_buffer()<CR>", opts)
 vim.keymap.set('n', '<leader>xg', ":lua require('LinkRef').go_captured()<CR>", opts)
 vim.keymap.set('v', '<leader>xg', ":lua require('LinkRef').go_selected()<CR>", opts)
-vim.keymap.set('v', '<leader>xl', ":lua require('LinkRef').add_identifier()<CR>", opts)
+vim.keymap.set('v', '<leader>xa', ":lua require('LinkRef').add_identifier()<CR>", opts)
 vim.keymap.set('v', '<leader>xs', ":lua require('LinkRef').show_content()<CR>", opts)
 ```
 
